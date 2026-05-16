@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bencha Capital, LLC</title>
+  <link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/5e1b149deb0c5277f107604a/504df81e-893c-4551-b874-d22f228289a8/Artboard+3.png?format=100w">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0b0b0b;
+      --bg-elevated: #111111;
+      --text: #ffffff;
+      --text-muted: #8a8a8a;
+      --accent: #e8762a;
+      --accent-dim: rgba(232, 118, 42, 0.12);
+      --line: rgba(232, 118, 42, 0.10);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- Canvas Background ---- */
+    #mesh-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ---- Grain Overlay ---- */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
+    }
+
+    /* ---- Navigation ---- */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(20px);
+      background: rgba(8, 8, 8, 0.6);
+      border-bottom: 1px solid var(--line);
+      animation: fadeDown 1s ease forwards;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .logo-wrapper img {
+      height: 30px;
+      width: auto;
+      opacity: 0.95;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-right a {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 300;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.4s ease;
+    }
+
+    .nav-right a:hover { color: var(--accent); }
+
+    .nav-linkedin {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-linkedin svg {
+      width: 14px; height: 14px;
+      fill: currentColor;
+    }
+
+    /* ---- Hero ---- */
+    .hero {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 140px 48px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero-label {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 300;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeUp 1s ease 0.4s forwards;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-label::before {
+      content: '';
+      width: 40px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .hero-headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(40px, 6vw, 80px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      max-width: 900px;
+      opacity: 0;
+      animation: fadeUp 1.2s ease 0.6s forwards;
+    }
+
+    .hero-headline em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-weight: 200;
+      font-size: clamp(15px, 1.5vw, 18px);
+      line-height: 1.8;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin-top: 40px;
+      opacity: 0;
+      animation: fadeUp 1.2s ease 0.9s forwards;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 48px;
+      left: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      animation: fadeUp 1s ease 1.4s forwards;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+      animation: pulse-line 2s ease infinite;
+    }
+
+    @keyframes pulse-line {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .scroll-indicator span {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      writing-mode: vertical-rl;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- Divider ---- */
+    .divider {
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    .divider-line {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+      opacity: 0.15;
+    }
+
+    /* ---- Contact Section ---- */
+    .contact {
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 100px 48px 120px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .contact-left h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 400;
+      font-size: clamp(28px, 3.5vw, 44px);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .contact-left p {
+      font-weight: 200;
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 20px;
+      line-height: 1.7;
+    }
+
+    .contact-right {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      padding-top: 8px;
+    }
+
+    .contact-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .contact-item-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 400;
+    }
+
+    .contact-item a,
+    .contact-item span {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 400;
+      font-size: 20px;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .contact-item a:hover {
+      color: var(--accent);
+    }
+
+    .contact-item .address {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 200;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ---- Footer ---- */
+    footer {
+      position: relative;
+      z-index: 2;
+      padding: 32px 48px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    footer span {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* ---- Intersection Observer Animations ---- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .hero { padding: 120px 24px 80px; }
+      .hero-headline { font-size: 36px; }
+      .contact {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        padding: 60px 24px 80px;
+      }
+      .divider { padding: 0 24px; }
+      footer { padding: 24px; flex-direction: column; gap: 12px; }
+      .scroll-indicator { left: 24px; bottom: 32px; }
+      .nav-right a:not(.nav-linkedin) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="mesh-canvas"></canvas>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="logo-wrapper">
+      <img src="https://images.squarespace-cdn.com/content/v1/5e1b149deb0c5277f107604a/504df81e-893c-4551-b874-d22f228289a8/Artboard+3.png?format=500w" alt="Bencha Capital, LLC" />
+    </div>
+    <div class="nav-right">
+      <a href="#contact">Contact</a>
+      <a href="https://www.linkedin.com/company/bencha" target="_blank" rel="noopener" class="nav-linkedin">
+        <svg viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-label">Social Enterprise</div>
+    <h1 class="hero-headline">
+      We invest in and startup <em>for-profit</em> social enterprise.
+    </h1>
+    <p class="hero-sub">
+      Building ventures at the intersection of financial return and meaningful social impact.
+    </p>
+
+    <div class="scroll-indicator">
+      <div class="scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="divider">
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- Contact -->
+  <section class="contact" id="contact">
+    <div class="contact-left reveal">
+      <h2>Let's build something that matters.</h2>
+      <p>We're always interested in connecting with mission-driven founders and like-minded investors.</p>
+    </div>
+    <div class="contact-right">
+      <div class="contact-item reveal">
+        <div class="contact-item-label">Email</div>
+        <a href="mailto:syed@benchacapital.com">syed@benchacapital.com</a>
+      </div>
+      <div class="contact-item reveal">
+        <div class="contact-item-label">Phone</div>
+        <a href="tel:+19739435643">+1 (973) 943-5643</a>
+      </div>
+      <div class="contact-item reveal">
+        <div class="contact-item-label">Office</div>
+        <div class="address">
+          2807 Jackson Ave.<br>
+          Ste: 15-105<br>
+          New York, NY 11101
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span>&copy; 2026 Bencha Capital, LLC</span>
+    <span>New York, NY</span>
+  </footer>
+
+  <script>
+    // ---- Flowing mesh / node network animation ----
+    const canvas = document.getElementById('mesh-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, nodes = [], mouse = { x: -1000, y: -1000 };
+
+    const ACCENT = { r: 232, g: 118, b: 42 };
+    const NODE_COUNT_DESKTOP = 60;
+    const NODE_COUNT_MOBILE = 30;
+    const CONNECTION_DIST = 180;
+    const MOUSE_RADIUS = 200;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    function createNodes() {
+      const count = w < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP;
+      nodes = [];
+      for (let i = 0; i < count; i++) {
+        nodes.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          radius: Math.random() * 1.5 + 0.5,
+          baseAlpha: Math.random() * 0.3 + 0.1,
+        });
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+
+      // Update and draw nodes
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+
+        // Gentle mouse repulsion
+        const dx = n.x - mouse.x;
+        const dy = n.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MOUSE_RADIUS && dist > 0) {
+          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * 0.02;
+          n.vx += (dx / dist) * force;
+          n.vy += (dy / dist) * force;
+        }
+
+        // Damping
+        n.vx *= 0.998;
+        n.vy *= 0.998;
+
+        n.x += n.vx;
+        n.y += n.vy;
+
+        // Wrap edges
+        if (n.x < -20) n.x = w + 20;
+        if (n.x > w + 20) n.x = -20;
+        if (n.y < -20) n.y = h + 20;
+        if (n.y > h + 20) n.y = -20;
+
+        // Draw node
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${ACCENT.r}, ${ACCENT.g}, ${ACCENT.b}, ${n.baseAlpha})`;
+        ctx.fill();
+      }
+
+      // Draw connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECTION_DIST) {
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.07;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(${ACCENT.r}, ${ACCENT.g}, ${ACCENT.b}, ${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Mouse tracking
+    window.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      createNodes();
+    });
+
+    resize();
+    createNodes();
+    animate();
+
+    // ---- Intersection Observer for reveals ----
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, i * 150);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
